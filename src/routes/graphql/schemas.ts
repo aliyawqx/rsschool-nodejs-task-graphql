@@ -1,20 +1,43 @@
-import { Type } from '@fastify/type-provider-typebox';
+import {
+  GraphQLObjectType,
+  GraphQLSchema,
+  GraphQLString,
+  GraphQLFloat,
+  GraphQLList,
+  GraphQLNonNull,
+} from 'graphql';
+import { PrismaClient, User } from '@prisma/client';
+import { ContextType } from './context.js';
 
-export const gqlResponseSchema = Type.Partial(
-  Type.Object({
-    data: Type.Any(),
-    errors: Type.Any(),
+const prisma = new PrismaClient();
+
+const UserType: GraphQLObjectType = new GraphQLObjectType<User, ContextType>({
+  name: 'User',
+  fields: () => ({
+    id: { type: new GraphQLNonNull(GraphQLString) },
+    name: { type: new GraphQLNonNull(GraphQLString) },
+    balance: { type: new GraphQLNonNull(GraphQLFloat) },
+    subs: {
+      type: new GraphQLList(UserType),
+      resolve: (user, _args, context) => {
+        return context.loaders.userSubsLoader.load(user.id);
+      },
+    },
   }),
-);
+});
 
-export const createGqlResponseSchema = {
-  body: Type.Object(
-    {
-      query: Type.String(),
-      variables: Type.Optional(Type.Record(Type.String(), Type.Any())),
+const RootQuery = new GraphQLObjectType({
+  name: 'Query',
+  fields: {
+    users: {
+      type: new GraphQLList(UserType),
+      resolve: async () => {
+        return await prisma.user.findMany();
+      },
     },
-    {
-      additionalProperties: false,
-    },
-  ),
-};
+  },
+});
+
+export const schema = new GraphQLSchema({
+  query: RootQuery,
+});

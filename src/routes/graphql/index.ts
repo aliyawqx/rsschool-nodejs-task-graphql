@@ -1,23 +1,20 @@
-import { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
-import { createGqlResponseSchema, gqlResponseSchema } from './schemas.js';
-import { graphql } from 'graphql';
+import Fastify from 'fastify';
+import mercurius from 'mercurius';
+import { schema } from './schemas.js';
+import { createContext } from './context.js';
 
-const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
-  const { prisma } = fastify;
+const app = Fastify();
 
-  fastify.route({
-    url: '/',
-    method: 'POST',
-    schema: {
-      ...createGqlResponseSchema,
-      response: {
-        200: gqlResponseSchema,
-      },
-    },
-    async handler(req) {
-      // return graphql();
-    },
-  });
-};
+app.register(mercurius, {
+  schema,
+  context: createContext,
+  graphiql: true,
+});
 
-export default plugin;
+app.listen({ port: 3000 }, (err, address) => {
+  if (err) {
+    console.error(err);
+    process.exit(1);
+  }
+  console.log(`🚀 Server ready at ${address}/graphiql`);
+});

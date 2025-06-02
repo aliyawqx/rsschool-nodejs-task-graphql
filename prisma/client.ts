@@ -1,6 +1,7 @@
 import { MemberType, PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
+export default prisma;
 
 const memberTypes: MemberType[] = [
   { id: 'BASIC', postsLimitPerMonth: 10, discount: 2.3 },
